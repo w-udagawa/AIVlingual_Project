@@ -1,0 +1,176 @@
+{
+  "scenes": [
+    {
+      "name": "AIVlingual - Chat Mode",
+      "sources": [
+        {
+          "name": "Main Camera",
+          "type": "video_capture_device",
+          "settings": {
+            "device": "default"
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 1920,
+            "height": 1080
+          }
+        },
+        {
+          "name": "AIVlingual Subtitles",
+          "type": "browser_source",
+          "settings": {
+            "url": "http://localhost:3000/obs?mode=subtitle&position=bottom&fontSize=28",
+            "width": 1920,
+            "height": 300,
+            "fps": 30
+          },
+          "position": {
+            "x": 0,
+            "y": 780,
+            "width": 1920,
+            "height": 300
+          }
+        },
+        {
+          "name": "AIVlingual Chat",
+          "type": "browser_source",
+          "settings": {
+            "url": "http://localhost:3000/obs?mode=chat&theme=transparent",
+            "width": 400,
+            "height": 600,
+            "fps": 30
+          },
+          "position": {
+            "x": 1520,
+            "y": 100,
+            "width": 400,
+            "height": 600
+          }
+        }
+      ]
+    },
+    {
+      "name": "AIVlingual - Teaching Mode",
+      "sources": [
+        {
+          "name": "Screen Share",
+          "type": "monitor_capture",
+          "settings": {
+            "monitor": 0
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 1920,
+            "height": 1080
+          }
+        },
+        {
+          "name": "Camera PIP",
+          "type": "video_capture_device",
+          "settings": {
+            "device": "default"
+          },
+          "position": {
+            "x": 1520,
+            "y": 680,
+            "width": 320,
+            "height": 240
+          }
+        },
+        {
+          "name": "AIVlingual Educational",
+          "type": "browser_source",
+          "settings": {
+            "url": "http://localhost:3000/obs?mode=educational&fontSize=32",
+            "width": 600,
+            "height": 400,
+            "fps": 30
+          },
+          "position": {
+            "x": 1320,
+            "y": 50,
+            "width": 600,
+            "height": 400
+          }
+        },
+        {
+          "name": "AIVlingual Analysis",
+          "type": "browser_source",
+          "settings": {
+            "url": "http://localhost:3000/obs?mode=analysis",
+            "width": 1920,
+            "height": 100,
+            "fps": 30
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 1920,
+            "height": 100
+          }
+        }
+      ]
+    },
+    {
+      "name": "AIVlingual - Avatar Mode",
+      "sources": [
+        {
+          "name": "Game/Content",
+          "type": "game_capture",
+          "settings": {},
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 1920,
+            "height": 1080
+          }
+        },
+        {
+          "name": "AIVlingual Avatar",
+          "type": "browser_source",
+          "settings": {
+            "url": "http://localhost:3000/obs?mode=avatar",
+            "width": 400,
+            "height": 400,
+            "fps": 30
+          },
+          "position": {
+            "x": 1420,
+            "y": 580,
+            "width": 400,
+            "height": 400
+          }
+        },
+        {
+          "name": "AIVlingual Subtitles Mini",
+          "type": "browser_source",
+          "settings": {
+            "url": "http://localhost:3000/obs?mode=subtitle&position=top&fontSize=20",
+            "width": 800,
+            "height": 200,
+            "fps": 30
+          },
+          "position": {
+            "x": 560,
+            "y": 50,
+            "width": 800,
+            "height": 200
+          }
+        }
+      ]
+    }
+  ],
+  "scene_transitions": {
+    "default_transition": "Fade",
+    "transition_duration": 300
+  },
+  "hotkeys": {
+    "switch_to_chat": "F1",
+    "switch_to_teaching": "F2",
+    "switch_to_avatar": "F3",
+    "toggle_subtitles": "F4",
+    "toggle_educational": "F5"
+  }
+}

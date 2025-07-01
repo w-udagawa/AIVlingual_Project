@@ -1,0 +1,147 @@
+{
+  "scene_collection_name": "AIVlingual Streaming",
+  "scenes": [
+    {
+      "name": "Starting Soon",
+      "sources": [
+        {
+          "type": "image",
+          "name": "Background",
+          "settings": {
+            "file": "../overlays/starting_soon_bg.png"
+          }
+        },
+        {
+          "type": "text",
+          "name": "Countdown Timer",
+          "settings": {
+            "text": "Starting in 5:00",
+            "font": {
+              "face": "Arial",
+              "size": 72,
+              "style": "Bold"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Main Stream",
+      "sources": [
+        {
+          "type": "browser_source",
+          "name": "AIVlingual Interface",
+          "settings": {
+            "url": "http://localhost:3000/obs-mode",
+            "width": 1920,
+            "height": 1080,
+            "css": "body { background: transparent; }"
+          },
+          "position": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "type": "image",
+          "name": "Avatar",
+          "settings": {
+            "file": "../avatars/idle.png"
+          },
+          "position": {
+            "x": 1520,
+            "y": 680
+          },
+          "scale": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        },
+        {
+          "type": "browser_source",
+          "name": "Chat Overlay",
+          "settings": {
+            "url": "http://localhost:3000/obs-mode?view=chat",
+            "width": 400,
+            "height": 600
+          },
+          "position": {
+            "x": 20,
+            "y": 460
+          }
+        }
+      ]
+    },
+    {
+      "name": "Video Analysis",
+      "sources": [
+        {
+          "type": "window_capture",
+          "name": "YouTube Window",
+          "settings": {
+            "window": "YouTube - Google Chrome"
+          },
+          "crop": {
+            "left": 0,
+            "right": 400,
+            "top": 100,
+            "bottom": 100
+          }
+        },
+        {
+          "type": "browser_source",
+          "name": "Analysis Overlay",
+          "settings": {
+            "url": "http://localhost:3000/obs-mode?view=analysis",
+            "width": 400,
+            "height": 1080
+          },
+          "position": {
+            "x": 1520,
+            "y": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ending",
+      "sources": [
+        {
+          "type": "image",
+          "name": "Ending Background",
+          "settings": {
+            "file": "../overlays/ending_bg.png"
+          }
+        },
+        {
+          "type": "text",
+          "name": "Thanks Message",
+          "settings": {
+            "text": "Thanks for watching!\nSee you next time!",
+            "font": {
+              "face": "Arial",
+              "size": 48
+            },
+            "align": "center"
+          }
+        }
+      ]
+    }
+  ],
+  "transitions": [
+    {
+      "name": "Fade",
+      "duration": 300
+    },
+    {
+      "name": "Cut",
+      "duration": 0
+    }
+  ],
+  "hotkeys": {
+    "switch_to_main": "F1",
+    "switch_to_video": "F2",
+    "toggle_recording": "F9",
+    "toggle_streaming": "F10"
+  }
+}
