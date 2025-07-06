@@ -5,6 +5,7 @@ __pycache__/
 *.so
 .Python
 venv/
+venv_*/
 env/
 ENV/
 .venv
@@ -14,6 +15,7 @@ pip-delete-this-directory.txt
 htmlcov/
 .coverage
 *.log
+logs/
 
 # Node.js
 node_modules/
@@ -45,8 +47,11 @@ build/
 
 # Test outputs
 test-screenshots/
+test-results/
+playwright-report/
 reports/
 tests/output/
+test_outputs/
 
 # Database
 *.db
@@ -58,6 +63,7 @@ tests/output/
 *.temp
 *.bak
 backup_*/
+nul
 
 # Claude specific
 .claude/

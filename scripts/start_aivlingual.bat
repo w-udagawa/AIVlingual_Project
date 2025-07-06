@@ -5,16 +5,24 @@ echo   AIVlingual Starting...
 echo ====================================
 echo.
 
-:: Start backend
-echo [1/3] Starting backend server...
-cd backend
-start /B cmd /c "venv\Scripts\activate && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+:: Check if Python is installed
+python --version >nul 2>&1
+if errorlevel 1 (
+    echo Error: Python is not installed or not in PATH
+    pause
+    exit /b 1
+)
+
+:: Start backend with Conda environment
+echo [1/3] Starting backend server with Conda...
+cd /d C:\ClaudeWork\AIVlingual_Project\backend
+start cmd /k "call C:\Users\WUUUM\miniconda3\Scripts\activate.bat && conda activate aivlingual_py311 && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
 timeout /t 5 /nobreak > nul
 
 :: Start frontend
 echo [2/3] Starting frontend server...
-cd ..\frontend
-start /B cmd /c "npm run dev"
+cd /d C:\ClaudeWork\AIVlingual_Project\frontend
+start cmd /k "npm run dev"
 timeout /t 5 /nobreak > nul
 
 :: Open browser
@@ -24,14 +32,13 @@ echo ====================================
 echo   AIVlingual is ready!
 echo ====================================
 echo.
-echo Application URL: http://localhost:3002
-echo.
-echo To exit, close this window.
+echo Backend URL: http://localhost:8000
+echo Frontend URL: http://localhost:3003
 echo.
 
 :: Auto open browser
 timeout /t 3 /nobreak > nul
-start http://localhost:3002
+start http://localhost:3003
 
-:: Keep window open
+echo Press any key to exit...
 pause > nul
