@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "info"
     
     # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003", "http://localhost:5173"]
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003", "http://localhost:3004", "http://localhost:5173"]
     
     # OBS WebSocket (optional)
     OBS_WEBSOCKET_HOST: str = "localhost"
