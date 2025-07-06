@@ -1,11 +1,13 @@
 """
-YouTube integration service using youtube-transcript-api
+YouTube integration service using youtube-transcript-api and YouTube Data API
 """
 
 import re
 from typing import Dict, List, Optional, Tuple
 import logging
 from urllib.parse import urlparse, parse_qs
+import aiohttp
+import json
 
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
@@ -45,9 +47,30 @@ class YouTubeService:
         return None
     
     async def get_video_info(self, video_id: str) -> Optional[Dict]:
-        """Get basic video information (limited without API key)"""
+        """Get video information using YouTube Data API if available"""
         try:
-            # Without YouTube Data API, we can only get transcript info
+            # Try YouTube Data API first if API key is available
+            if settings.YOUTUBE_API_KEY:
+                video_data = await self._get_video_info_from_api(video_id)
+                if video_data:
+                    # Also get transcript info
+                    try:
+                        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+                        available_languages = []
+                        for transcript in transcript_list:
+                            available_languages.append({
+                                'language': transcript.language,
+                                'language_code': transcript.language_code,
+                                'is_generated': transcript.is_generated,
+                                'is_translatable': transcript.is_translatable
+                            })
+                        video_data['available_transcripts'] = available_languages
+                    except:
+                        video_data['available_transcripts'] = []
+                    
+                    return video_data
+            
+            # Fallback to transcript-only info
             transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
             
             # Get available languages
@@ -65,7 +88,12 @@ class YouTubeService:
                 'title': f'Video {video_id}',  # Can't get title without API
                 'description': '',
                 'channel_title': '',
+                'channel_id': '',
                 'duration': 0,
+                'view_count': 0,
+                'like_count': 0,
+                'published_at': '',
+                'tags': [],
                 'available_transcripts': available_languages,
                 'url': f'https://www.youtube.com/watch?v={video_id}'
             }
@@ -74,39 +102,149 @@ class YouTubeService:
             logger.error(f"Error getting video info: {str(e)}")
             return None
     
-    async def get_transcript(self, video_id: str, languages: Optional[List[str]] = None) -> Optional[List[Dict]]:
-        """Get video transcript"""
+    async def _get_video_info_from_api(self, video_id: str) -> Optional[Dict]:
+        """Get video information from YouTube Data API"""
+        try:
+            url = "https://www.googleapis.com/youtube/v3/videos"
+            params = {
+                'id': video_id,
+                'key': settings.YOUTUBE_API_KEY,
+                'part': 'snippet,contentDetails,statistics'
+            }
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, params=params) as response:
+                    if response.status != 200:
+                        logger.error(f"YouTube API error: {response.status}")
+                        return None
+                    
+                    data = await response.json()
+                    
+                    if not data.get('items'):
+                        logger.error(f"Video not found: {video_id}")
+                        return None
+                    
+                    item = data['items'][0]
+                    snippet = item['snippet']
+                    stats = item.get('statistics', {})
+                    details = item.get('contentDetails', {})
+                    
+                    # Parse duration from ISO 8601 format
+                    duration_seconds = self._parse_duration(details.get('duration', 'PT0S'))
+                    
+                    return {
+                        'video_id': video_id,
+                        'title': snippet.get('title', ''),
+                        'description': snippet.get('description', '')[:500],  # Limit description length
+                        'channel_title': snippet.get('channelTitle', ''),
+                        'channel_id': snippet.get('channelId', ''),
+                        'duration': duration_seconds,
+                        'view_count': int(stats.get('viewCount', 0)),
+                        'like_count': int(stats.get('likeCount', 0)),
+                        'comment_count': int(stats.get('commentCount', 0)),
+                        'published_at': snippet.get('publishedAt', ''),
+                        'tags': snippet.get('tags', [])[:10],  # Limit tags
+                        'thumbnail_url': snippet.get('thumbnails', {}).get('high', {}).get('url', ''),
+                        'url': f'https://www.youtube.com/watch?v={video_id}'
+                    }
+                    
+        except Exception as e:
+            logger.error(f"Error calling YouTube Data API: {str(e)}")
+            return None
+    
+    def _parse_duration(self, duration_str: str) -> int:
+        """Parse ISO 8601 duration to seconds"""
+        # Example: PT4M13S -> 253 seconds
+        import re
+        
+        match = re.match(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?', duration_str)
+        if not match:
+            return 0
+        
+        hours = int(match.group(1) or 0)
+        minutes = int(match.group(2) or 0)
+        seconds = int(match.group(3) or 0)
+        
+        return hours * 3600 + minutes * 60 + seconds
+    
+    async def get_transcript(self, video_id: str, languages: Optional[List[str]] = None, prefer_auto_generated: bool = False) -> Optional[List[Dict]]:
+        """Get video transcript
+        
+        Args:
+            video_id: YouTube video ID
+            languages: Preferred languages (default: ['ja', 'en'])
+            prefer_auto_generated: If True, try auto-generated captions first
+        """
         try:
             if not languages:
                 languages = self.supported_languages
                 
+            # Expand language codes to include variants
+            expanded_languages = []
+            for lang in languages:
+                if lang == 'ja':
+                    expanded_languages.extend(['ja', 'ja-JP'])
+                elif lang == 'en':
+                    expanded_languages.extend(['en', 'en-US', 'en-GB'])
+                else:
+                    expanded_languages.append(lang)
+                    
             # Try to get transcript in preferred languages
             transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
             
             transcript = None
             selected_language = None
             
-            # Try manual transcripts first
-            for lang in languages:
-                try:
-                    transcript = transcript_list.find_manually_created_transcript([lang])
-                    selected_language = lang
-                    break
-                except NoTranscriptFound:
-                    continue
-                    
-            # If no manual transcript, try generated ones
-            if not transcript:
-                for lang in languages:
+            # If prefer_auto_generated, try generated ones first
+            if prefer_auto_generated:
+                for lang in expanded_languages:
                     try:
                         transcript = transcript_list.find_generated_transcript([lang])
                         selected_language = lang
+                        logger.info(f"Found auto-generated transcript for {video_id} in {lang}")
+                        break
+                    except NoTranscriptFound:
+                        continue
+            
+            # Try manual transcripts
+            if not transcript:
+                for lang in expanded_languages:
+                    try:
+                        transcript = transcript_list.find_manually_created_transcript([lang])
+                        selected_language = lang
+                        logger.info(f"Found manual transcript for {video_id} in {lang}")
                         break
                     except NoTranscriptFound:
                         continue
                         
+            # If no manual transcript and not prefer_auto_generated, try generated ones
+            if not transcript and not prefer_auto_generated:
+                for lang in expanded_languages:
+                    try:
+                        transcript = transcript_list.find_generated_transcript([lang])
+                        selected_language = lang
+                        logger.info(f"Found auto-generated transcript for {video_id} in {lang}")
+                        break
+                    except NoTranscriptFound:
+                        continue
+            
+            # Last resort: try auto-translation
             if not transcript:
-                logger.warning(f"No transcript found for video {video_id} in languages {languages}")
+                logger.info(f"Attempting auto-translation for video {video_id}")
+                for available_transcript in transcript_list:
+                    try:
+                        # Translate to the first preferred language
+                        target_lang = languages[0]
+                        transcript = available_transcript.translate(target_lang)
+                        selected_language = f"{available_transcript.language_code}->{target_lang}"
+                        logger.info(f"Auto-translated from {available_transcript.language_code} to {target_lang}")
+                        break
+                    except Exception as e:
+                        logger.debug(f"Translation failed: {e}")
+                        continue
+                        
+            if not transcript:
+                logger.warning(f"No transcript found for video {video_id} in languages {expanded_languages}")
                 return None
                 
             # Fetch the transcript
@@ -145,7 +283,11 @@ class YouTubeService:
             logger.warning(f"No transcript found for video {video_id}")
             return None
         except Exception as e:
-            logger.error(f"Error getting transcript: {str(e)}")
+            logger.error(f"Error getting transcript for video {video_id}: {str(e)}")
+            logger.error(f"Error type: {type(e).__name__}")
+            if hasattr(e, '__traceback__'):
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
             return None
     
     async def analyze_video(self, video_id: str) -> Dict:
@@ -307,3 +449,96 @@ class YouTubeService:
                 unique_expressions.append(expr)
         
         return unique_expressions[:50]  # Limit to top 50 expressions
+    
+    async def get_channel_videos(self, channel_id: str, max_results: int = 20) -> Optional[List[Dict]]:
+        """Get recent videos from a YouTube channel"""
+        if not settings.YOUTUBE_API_KEY:
+            logger.warning("YouTube API key not configured")
+            return None
+        
+        try:
+            url = "https://www.googleapis.com/youtube/v3/search"
+            params = {
+                'channelId': channel_id,
+                'key': settings.YOUTUBE_API_KEY,
+                'part': 'id,snippet',
+                'order': 'date',
+                'maxResults': max_results,
+                'type': 'video'
+            }
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, params=params) as response:
+                    if response.status != 200:
+                        logger.error(f"YouTube API error: {response.status}")
+                        return None
+                    
+                    data = await response.json()
+                    
+                    videos = []
+                    for item in data.get('items', []):
+                        video = {
+                            'video_id': item['id']['videoId'],
+                            'title': item['snippet']['title'],
+                            'description': item['snippet']['description'][:200],
+                            'published_at': item['snippet']['publishedAt'],
+                            'thumbnail_url': item['snippet']['thumbnails']['high']['url'],
+                            'channel_title': item['snippet']['channelTitle'],
+                            'url': f"https://www.youtube.com/watch?v={item['id']['videoId']}"
+                        }
+                        videos.append(video)
+                    
+                    return videos
+                    
+        except Exception as e:
+            logger.error(f"Error getting channel videos: {str(e)}")
+            return None
+    
+    async def search_videos(self, query: str, max_results: int = 10, vtuber_filter: bool = True) -> Optional[List[Dict]]:
+        """Search for videos on YouTube"""
+        if not settings.YOUTUBE_API_KEY:
+            logger.warning("YouTube API key not configured")
+            return None
+        
+        try:
+            # Add Vtuber-related terms to search if filter is enabled
+            if vtuber_filter:
+                query = f"{query} (Vtuber OR VTuber OR バーチャルYouTuber)"
+            
+            url = "https://www.googleapis.com/youtube/v3/search"
+            params = {
+                'q': query,
+                'key': settings.YOUTUBE_API_KEY,
+                'part': 'id,snippet',
+                'maxResults': max_results,
+                'type': 'video',
+                'relevanceLanguage': 'ja'  # Prioritize Japanese content
+            }
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, params=params) as response:
+                    if response.status != 200:
+                        logger.error(f"YouTube API error: {response.status}")
+                        return None
+                    
+                    data = await response.json()
+                    
+                    videos = []
+                    for item in data.get('items', []):
+                        video = {
+                            'video_id': item['id']['videoId'],
+                            'title': item['snippet']['title'],
+                            'description': item['snippet']['description'][:200],
+                            'published_at': item['snippet']['publishedAt'],
+                            'thumbnail_url': item['snippet']['thumbnails']['high']['url'],
+                            'channel_title': item['snippet']['channelTitle'],
+                            'channel_id': item['snippet']['channelId'],
+                            'url': f"https://www.youtube.com/watch?v={item['id']['videoId']}"
+                        }
+                        videos.append(video)
+                    
+                    return videos
+                    
+        except Exception as e:
+            logger.error(f"Error searching videos: {str(e)}")
+            return None
