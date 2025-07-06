@@ -33,9 +33,13 @@ export const API_ENDPOINTS = {
   
   // YouTube endpoints
   youtube: {
-    analyze: '/api/v1/youtube/analyze',
+    analyze: '/api/v1/youtube/extract-vocabulary', // Map analyze to extract-vocabulary endpoint
     transcript: (videoId: string) => `/api/v1/youtube/transcript/${videoId}`,
     metadata: (videoId: string) => `/api/v1/youtube/metadata/${videoId}`,
+    search: '/api/v1/youtube/search',
+    batchExtract: '/api/v1/youtube/batch-extract',
+    batchStatus: (batchId: string) => `/api/v1/youtube/batch-status/${batchId}`,
+    batchHistory: '/api/v1/youtube/batch-history',
   },
   
   // WebSocket endpoints

@@ -187,7 +187,15 @@ class BilingualAIResponder:
                 }
             }
         except Exception as e:
-            logger.error(f"Error generating AI response: {str(e)}")
+            import traceback
+            error_details = {
+                'error_type': type(e).__name__,
+                'error_message': str(e),
+                'traceback': traceback.format_exc()
+            }
+            logger.error(f"Error generating AI response: {error_details['error_type']} - {error_details['error_message']}")
+            logger.debug(f"Full traceback: {error_details['traceback']}")
+            
             fallback_response = self._get_fallback_response(detected_language)
             
             return {
@@ -195,7 +203,8 @@ class BilingualAIResponder:
                 'language': detected_language,
                 'tts_command': None,
                 'metadata': {
-                    'error': str(e),
+                    'error': error_details['error_message'],
+                    'error_type': error_details['error_type'],
                     'fallback': True
                 }
             }

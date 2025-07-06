@@ -270,7 +270,7 @@ const WebSpeechInterface: React.FC = () => {
   }
 
   return (
-    <div className="audio-interface">
+    <div className="audio-interface web-speech-interface" data-testid="voice-input">
       <div className="recording-controls">
         <div className="language-selector">
           <select onChange={(e) => changeLanguage(e.target.value)} defaultValue="ja-JP">
@@ -285,6 +285,7 @@ const WebSpeechInterface: React.FC = () => {
           className={`mic-button ${isRecording ? 'recording' : ''}`}
           onClick={toggleRecording}
           disabled={!isConnected}
+          data-testid="mic-button"
         >
           <svg 
             width="24" 

@@ -19,6 +19,7 @@ class VocabularyModel(BaseModel):
     source: str = 'conversation'  # 'conversation', 'video', 'manual'
     source_video_id: Optional[str] = None  # データベースと一致
     video_timestamp: Optional[float] = None  # データベースと一致
+    source_language: Optional[str] = 'japanese'  # 'japanese', 'english', 'mixed'
     notes: Optional[str] = None
     notion_id: Optional[str] = None
     synced_at: Optional[datetime] = None

@@ -1,9 +1,32 @@
 import React, { useState } from 'react'
 import toast from 'react-hot-toast'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { youtubeService, vocabularyService } from '../services'
 import type { VideoInfo, Expression, VocabularyExtractionResult, VocabularyItem } from '../services'
 
+// Loading spinner component
+const LoadingSpinner: React.FC<{ message?: string }> = ({ message = 'Loading...' }) => (
+  <div className="loading-container">
+    <div className="loading-spinner" />
+    <p className="loading-message">{message}</p>
+  </div>
+)
+
+// Error display component
+const ErrorDisplay: React.FC<{ error: string; onRetry?: () => void }> = ({ error, onRetry }) => (
+  <div className="error-container" role="alert">
+    <svg className="error-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    <p className="error-message">{error}</p>
+    {onRetry && (
+      <button onClick={onRetry} className="retry-button">
+        Retry
+      </button>
+    )}
+  </div>
+)
 
 const VideoAnalyzer: React.FC = () => {
   const [videoUrl, setVideoUrl] = useState('')
@@ -13,6 +36,7 @@ const VideoAnalyzer: React.FC = () => {
   const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null)
   const [expressions, setExpressions] = useState<Expression[]>([])
   const [extractionResult, setExtractionResult] = useState<VocabularyExtractionResult | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const analyzeVideo = async () => {
     if (!videoUrl) {
@@ -22,6 +46,9 @@ const VideoAnalyzer: React.FC = () => {
 
     try {
       setLoading(true)
+      setError(null)
+      setExtractionResult(null) // Clear previous extraction results
+      
       const timestampValue = timestamp ? parseFloat(timestamp) : undefined
       const result = await youtubeService.analyzeVideo(videoUrl, timestampValue)
       
@@ -33,7 +60,9 @@ const VideoAnalyzer: React.FC = () => {
       toast.success('Video analyzed successfully')
     } catch (error: any) {
       console.error('Error analyzing video:', error)
-      toast.error(error.message || 'Failed to analyze video')
+      const errorMessage = error.message || 'Failed to analyze video'
+      setError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -47,9 +76,13 @@ const VideoAnalyzer: React.FC = () => {
 
     try {
       setExtracting(true)
+      setError(null)
+      setExpressions([]) // Clear previous analysis results
+      
       const result = await youtubeService.extractVocabulary(videoUrl)
       
       if (result.error) {
+        setError(result.error)
         toast.error(result.error)
         return
       }
@@ -60,7 +93,9 @@ const VideoAnalyzer: React.FC = () => {
       toast.success(`Extracted ${result.vocabulary_extracted} vocabulary items!`)
     } catch (error: any) {
       console.error('Error extracting vocabulary:', error)
-      toast.error(error.message || 'Failed to extract vocabulary')
+      const errorMessage = error.message || 'Failed to extract vocabulary'
+      setError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setExtracting(false)
     }
@@ -77,16 +112,32 @@ const VideoAnalyzer: React.FC = () => {
   }
 
   const saveVocabularyItems = async () => {
-    if (!extractionResult?.vocabulary_items) return
+    if (!extractionResult?.vocabulary_items || extractionResult.vocabulary_items.length === 0) {
+      toast.error('No vocabulary items to save')
+      return
+    }
 
     try {
-      const results = await vocabularyService.createBatchVocabularyItems(
-        extractionResult.vocabulary_items
-      )
+      setLoading(true)
+      // Ensure all items have required fields
+      const validItems = extractionResult.vocabulary_items.map((item, index) => ({
+        ...item,
+        id: item.id || `temp-${Date.now()}-${index}`,
+        video_id: item.video_id || videoInfo?.video_id,
+        source: 'video' as const,
+        tags: item.tags || ['vtuber', 'extracted'],
+        created_at: item.created_at || new Date().toISOString()
+      }))
+      
+      const results = await vocabularyService.createBatchVocabularyItems(validItems)
       toast.success(`Saved ${results.length} vocabulary items to database`)
     } catch (error: any) {
       console.error('Error saving vocabulary:', error)
-      toast.error('Failed to save vocabulary items')
+      const errorMessage = error.message || 'Failed to save vocabulary items'
+      setError(errorMessage)
+      toast.error(errorMessage)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -107,6 +158,7 @@ const VideoAnalyzer: React.FC = () => {
             value={videoUrl}
             onChange={(e) => setVideoUrl(e.target.value)}
             className="url-input"
+            disabled={loading || extracting}
           />
           <input
             type="number"
@@ -116,23 +168,85 @@ const VideoAnalyzer: React.FC = () => {
             className="timestamp-input"
             min="0"
             step="1"
+            disabled={loading || extracting}
           />
           <button
             onClick={analyzeVideo}
             disabled={loading || extracting}
             className="analyze-button"
           >
-            {loading ? 'Analyzing...' : 'Analyze'}
+            {loading && !extracting ? (
+              <>
+                <span className="button-spinner" />
+                Analyzing...
+              </>
+            ) : (
+              'Analyze'
+            )}
           </button>
           <button
             onClick={extractVocabulary}
             disabled={loading || extracting}
             className="extract-button"
           >
-            {extracting ? 'Extracting...' : 'Extract Vocabulary'}
+            {extracting ? (
+              <>
+                <span className="button-spinner" />
+                Extracting...
+              </>
+            ) : (
+              'Extract Vocabulary'
+            )}
           </button>
         </div>
       </div>
+
+      {/* Error display */}
+      <AnimatePresence>
+        {error && !loading && !extracting && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            <ErrorDisplay 
+              error={error} 
+              onRetry={() => {
+                setError(null)
+                if (extractionResult) {
+                  extractVocabulary()
+                } else {
+                  analyzeVideo()
+                }
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Loading states */}
+      <AnimatePresence>
+        {(loading || extracting) && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.2 }}
+            className="loading-overlay"
+          >
+            <LoadingSpinner 
+              message={
+                extracting 
+                  ? 'Extracting vocabulary from video transcript...' 
+                  : loading && extractionResult
+                  ? 'Saving vocabulary to database...'
+                  : 'Analyzing video information...'
+              } 
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {videoInfo && (
         <motion.div
@@ -181,6 +295,7 @@ const VideoAnalyzer: React.FC = () => {
       {extractionResult && (
         <motion.div
           className="extraction-results"
+          data-testid="extraction-results-container"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.2 }}
@@ -190,7 +305,7 @@ const VideoAnalyzer: React.FC = () => {
             <button
               onClick={saveVocabularyItems}
               className="save-button"
-              disabled={!extractionResult.vocabulary_items.length}
+              disabled={!extractionResult.vocabulary_items?.length}
             >
               Save to Database
             </button>
@@ -198,28 +313,28 @@ const VideoAnalyzer: React.FC = () => {
           
           <div className="stats-grid">
             <div className="stat-card">
-              <div className="stat-value">{extractionResult.vocabulary_extracted}</div>
+              <div className="stat-value" data-testid="vocabulary-count">{extractionResult.vocabulary_extracted}</div>
               <div className="stat-label">Items Extracted</div>
             </div>
             <div className="stat-card">
               <div className="stat-value">
-                {Math.round(extractionResult.language_stats.japanese_ratio * 100)}%
+                {Math.round(extractionResult.language_stats.japanese_ratio)}%
               </div>
               <div className="stat-label">Japanese</div>
             </div>
             <div className="stat-card">
               <div className="stat-value">
-                {Math.round(extractionResult.language_stats.english_ratio * 100)}%
+                {Math.round(extractionResult.language_stats.english_ratio)}%
               </div>
               <div className="stat-label">English</div>
             </div>
           </div>
 
-          <div className="vocabulary-preview">
+          <div className="vocabulary-preview" data-testid="vocabulary-results">
             <h4>Preview (First 5 items):</h4>
-            {extractionResult.vocabulary_items.slice(0, 5).map((item: VocabularyItem, index: number) => (
-              <div key={index} className="vocab-item">
-                <span className="vocab-japanese">{item.japanese}</span>
+            {extractionResult.vocabulary_items?.slice(0, 5).map((item: VocabularyItem, index: number) => (
+              <div key={index} className="vocab-item" data-testid="vocabulary-item" data-category={item.category || 'general'}>
+                <span className="vocab-japanese" data-testid="japanese-text">{item.japanese}</span>
                 <span className="vocab-english">{item.english}</span>
                 <span className="vocab-difficulty">Lv.{item.difficulty}</span>
               </div>
@@ -515,6 +630,111 @@ const VideoAnalyzer: React.FC = () => {
           background-color: var(--primary-color);
           color: white;
           border-radius: 0.25rem;
+        }
+
+        /* Loading and error states */
+        .loading-overlay {
+          position: relative;
+          padding: 2rem;
+          background-color: rgba(30, 41, 59, 0.5);
+          border-radius: 0.75rem;
+          margin: 1rem 0;
+        }
+
+        .loading-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 1rem;
+        }
+
+        .loading-spinner {
+          width: 3rem;
+          height: 3rem;
+          border: 3px solid rgba(255, 255, 255, 0.1);
+          border-top: 3px solid var(--primary-color);
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+
+        .button-spinner {
+          display: inline-block;
+          width: 1rem;
+          height: 1rem;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-top: 2px solid white;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        .loading-message {
+          color: var(--text-secondary);
+          font-size: 0.875rem;
+          text-align: center;
+        }
+
+        .error-container {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          padding: 1rem;
+          background-color: rgba(239, 68, 68, 0.1);
+          border: 1px solid rgba(239, 68, 68, 0.3);
+          border-radius: 0.5rem;
+          margin: 1rem 0;
+        }
+
+        .error-icon {
+          width: 1.5rem;
+          height: 1.5rem;
+          color: var(--error);
+          flex-shrink: 0;
+        }
+
+        .error-message {
+          flex: 1;
+          color: var(--error);
+          font-size: 0.875rem;
+        }
+
+        .retry-button {
+          padding: 0.375rem 0.75rem;
+          background-color: transparent;
+          color: var(--error);
+          border: 1px solid var(--error);
+          border-radius: 0.375rem;
+          font-size: 0.875rem;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .retry-button:hover {
+          background-color: var(--error);
+          color: white;
+        }
+
+        /* Disabled state improvements */
+        .url-input:disabled,
+        .timestamp-input:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .analyze-button:disabled,
+        .extract-button:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        /* Success toast override */
+        [role="status"] {
+          background-color: var(--success) !important;
         }
       `}</style>
     </div>

@@ -60,6 +60,9 @@ async def websocket_audio_endpoint(websocket: WebSocket):
     """WebSocket endpoint for audio streaming"""
     client_id = await session_manager.create_session()
     
+    # Initialize processing_task to None
+    processing_task = None
+    
     try:
         await manager.connect(websocket, client_id)
         
@@ -119,8 +122,8 @@ async def websocket_audio_endpoint(websocket: WebSocket):
         manager.disconnect(client_id)
         await session_manager.end_session(client_id)
         
-        # Cancel the processing task gracefully
-        if not processing_task.done():
+        # Cancel the processing task gracefully if it exists
+        if processing_task is not None and not processing_task.done():
             processing_task.cancel()
             try:
                 await processing_task

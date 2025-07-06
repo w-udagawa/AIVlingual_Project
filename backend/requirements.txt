@@ -15,7 +15,7 @@ aiosqlite==0.19.0
 
 # External APIs
 notion-client==2.2.1
-youtube-transcript-api==0.6.2
+youtube-transcript-api==0.6.4
 obsws-python==1.6.1
 httpx==0.26.0
 

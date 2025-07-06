@@ -144,6 +144,83 @@ class VocabularyService {
       return order === 'desc' ? dateB - dateA : dateA - dateB
     })
   }
+
+  /**
+   * Get user's learning progress for a vocabulary item
+   */
+  async getVocabularyProgress(vocabularyId: string): Promise<any> {
+    return apiClient.get(`${API_ENDPOINTS.vocabulary.list}/${vocabularyId}/progress`)
+  }
+
+  /**
+   * Update user's learning progress for a vocabulary item
+   */
+  async updateVocabularyProgress(vocabularyId: string, progress: any): Promise<any> {
+    return apiClient.post(`${API_ENDPOINTS.vocabulary.list}/${vocabularyId}/progress`, progress)
+  }
+
+  /**
+   * Get user's overall learning statistics
+   */
+  async getLearningStats(): Promise<any> {
+    return apiClient.get(`${API_ENDPOINTS.vocabulary.list}/progress/stats`)
+  }
+
+  /**
+   * Get vocabulary items due for review
+   */
+  async getDueReviews(limit: number = 50): Promise<any> {
+    return apiClient.get(`${API_ENDPOINTS.vocabulary.list}/progress/due`, { limit })
+  }
+
+  /**
+   * Record a review session
+   */
+  async recordReview(vocabularyId: string, correct: boolean, timeSpentSeconds?: number): Promise<any> {
+    return apiClient.post(`${API_ENDPOINTS.vocabulary.list}/${vocabularyId}/review`, {
+      correct,
+      time_spent_seconds: timeSpentSeconds
+    })
+  }
+
+  /**
+   * Export vocabulary to CSV
+   */
+  async exportToCSV(params?: { difficulty_level?: number; limit?: number }): Promise<any> {
+    const response = await fetch(`${API_ENDPOINTS.vocabulary.list}/export/csv?${new URLSearchParams(params as any)}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+    return response.text()
+  }
+
+  /**
+   * Export vocabulary to JSON
+   */
+  async exportToJSON(params?: { difficulty_level?: number; limit?: number }): Promise<any> {
+    const response = await fetch(`${API_ENDPOINTS.vocabulary.list}/export/json?${new URLSearchParams(params as any)}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+    return response.text()
+  }
+
+  /**
+   * Export vocabulary to Anki deck
+   */
+  async exportToAnki(params?: { difficulty_level?: number; limit?: number; deck_name?: string }): Promise<any> {
+    const response = await fetch(`${API_ENDPOINTS.vocabulary.list}/export/anki?${new URLSearchParams(params as any)}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+    return response.blob()
+  }
 }
 
 // Singleton instance

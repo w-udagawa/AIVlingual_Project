@@ -24,9 +24,9 @@ const ConnectionStatus: React.FC = () => {
   }
 
   return (
-    <div className="connection-status">
+    <div className="connection-status" data-testid="connection-status">
       {getStatusIcon()}
-      <span className="status-text">
+      <span className="status-text" data-testid="connection-status-text">
         {isConnecting ? '接続中...' : isConnected ? '接続済み' : '切断'}
       </span>
 
