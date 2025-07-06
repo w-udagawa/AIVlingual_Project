@@ -1,0 +1,25 @@
+# NLP Libraries for Advanced Vocabulary Extraction
+# Install with: pip install -r requirements-nlp.txt
+
+# spaCy - Core NLP library
+spacy==3.7.2
+
+# GiNZA - Japanese NLP for spaCy
+ginza==5.1.3
+ja-ginza-electra==5.1.3
+
+# Additional NLP utilities
+sudachipy==0.6.8
+sudachidict-core==20240109
+
+# Caching
+redis==5.0.1
+hiredis==2.3.2
+
+# Data processing
+pandas==2.1.4
+numpy==1.26.3
+
+# For downloading spaCy models, run:
+# python -m spacy download en_core_web_lg
+# python -m spacy download ja_core_news_lg (if not using GiNZA)
