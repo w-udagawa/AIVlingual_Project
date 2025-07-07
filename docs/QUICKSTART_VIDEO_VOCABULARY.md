@@ -18,10 +18,19 @@ SECRET_KEY=your_secret_key_for_jwt
 
 ### 2. サーバー起動
 
-```bash
-cd backend
-source venv/bin/activate  # 仮想環境を有効化
-uvicorn app.main:app --reload
+**重要: NLP機能を使用する場合は、Windowsコマンドプロンプトで実行**
+
+```cmd
+# Windowsコマンドプロンプトで実行（WSL2ではない）
+cd C:\ClaudeWork\AIVlingual_Project\backend
+conda activate aivlingual_py311
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+フロントエンド（別ターミナル）:
+```cmd
+cd C:\ClaudeWork\AIVlingual_Project\frontend
+npm run dev
 ```
 
 ## 基本的な使い方
@@ -38,7 +47,21 @@ curl -X POST http://localhost:8000/api/v1/auth/register \
   }'
 ```
 
-### 2. YouTube動画から語彙を抽出
+### 2. ログイン
+
+```bash
+# username_or_email フィールドを使用（usernameではない）
+curl -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username_or_email": "test",
+    "password": "test0702"
+  }'
+
+# レスポンスから access_token を取得
+```
+
+### 3. YouTube動画から語彙を抽出
 
 ```bash
 # 認証トークンを使用
@@ -48,7 +71,9 @@ curl -X GET "http://localhost:8000/api/v1/youtube/extract-vocabulary?url=https:/
   -H "Authorization: Bearer $TOKEN"
 ```
 
-### 3. 語彙をエクスポート
+**注意**: `/api/v1/youtube/analyze` エンドポイントは存在しません。`/extract-vocabulary` を使用してください。
+
+### 4. 語彙をエクスポート
 
 #### Ankiデッキとして
 ```bash
@@ -155,6 +180,12 @@ await client.update_preferences({
 - 動画に日本語字幕があるか確認
 - Gemini APIキーが有効か確認
 - ネットワーク接続を確認
+
+### NLP機能で語彙が3-5個しか抽出されない
+- **最も一般的な問題**: WSL2環境でバックエンドを実行している
+- **解決方法**: Windowsコマンドプロンプトで再起動
+- **確認方法**: `http://localhost:8000/api/v1/youtube/debug-env` で環境を確認
+- 詳細は `/docs/NLP_TROUBLESHOOTING_GUIDE.md` を参照
 
 ### データベースエラー
 - マイグレーションが実行されているか確認

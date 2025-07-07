@@ -49,14 +49,21 @@ AIVlingualは、VTuberのクリップから日本語を学べる革新的なシ�
 3. ダウンロードしたファイルをダブルクリックしてインストール
 4. すべて「次へ」をクリックしてデフォルト設定でOK
 
-#### 1-2. Pythonのインストール
-1. [Python公式サイト](https://www.python.org/downloads/)にアクセス
-2. 「Download Python 3.12.x」をクリック
+#### 1-2. Minicondaのインストール（推奨）
+1. [Miniconda公式サイト](https://docs.conda.io/en/latest/miniconda.html)にアクセス
+2. Windows用のPython 3.11インストーラーをダウンロード
 3. インストーラーを実行
-4. **重要**: 「Add Python to PATH」にチェックを入れる
-5. 「Install Now」をクリック
+4. **重要**: 「Add Miniconda3 to my PATH environment variable」にチェック
+5. インストール完了後、新しいコマンドプロンプトを開く
 
-#### 1-3. Gitのインストール（オプション）
+#### 1-3. Python環境のセットアップ
+**Windowsコマンドプロンプトで実行（WSL2ではありません）**:
+```cmd
+conda create -n aivlingual_py311 python=3.11
+conda activate aivlingual_py311
+```
+
+#### 1-4. Gitのインストール（オプション）
 1. [Git公式サイト](https://git-scm.com/download/win)にアクセス
 2. お使いのOSに合わせてダウンロード
 3. インストーラーを実行（すべてデフォルト設定でOK）
@@ -119,40 +126,54 @@ GEMINI_API_KEY=ここにコピーしたAPIキーを貼り付け
 
 ### 方法1: 簡単起動（Windows）
 
-1. `start_aivlingual.bat`をダブルクリック
+1. `scripts\start_aivlingual.bat`をダブルクリック
 2. 自動的にブラウザが開きます
-3. もし開かない場合は、手動で http://localhost:3002 にアクセス
+3. もし開かない場合は、手動で http://localhost:3003 にアクセス
 
-### 方法2: 手動起動
+### 方法2: 手動起動（推奨）
 
 #### バックエンドの起動
+**重要: Windowsコマンドプロンプトで実行（WSL2ではありません）**
 1. コマンドプロンプトを開く
 2. 以下のコマンドを実行：
 ```cmd
-cd Desktop\AIVlingual_Project\backend
-venv\Scripts\activate
-uvicorn app.main:app --reload
+cd C:\ClaudeWork\AIVlingual_Project\backend
+conda activate aivlingual_py311
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 #### フロントエンドの起動（別のコマンドプロンプトで）
 1. 新しいコマンドプロンプトを開く
 2. 以下のコマンドを実行：
 ```cmd
-cd Desktop\AIVlingual_Project\frontend
+cd C:\ClaudeWork\AIVlingual_Project\frontend
 npm run dev
 ```
 
-3. ブラウザで http://localhost:3002 を開く
+3. ブラウザで http://localhost:3003 を開く
+
+### ⚠️ NLP機能について
+高度な語彙抽出機能（30個以上の語彙抽出）を使用するには、必ずWindowsコマンドプロンプトでConda環境を使用してバックエンドを起動してください。WSL2では3-5個の語彙しか抽出されません。
 
 ---
 
 ## 📱 基本的な使い方
 
+### 0. ログイン（新機能）
+1. アプリを開くとログイン画面が表示されます
+2. 初回利用の場合は「新規登録」をクリック
+3. ユーザー名、メールアドレス、パスワード（6文字以上）を入力
+4. 登録後、自動的にログインされます
+
+**テストアカウント**:
+- ユーザー名またはメール: `test`
+- パスワード: `test0702`
+
 ### 1. チャット機能
-1. アプリを開くと自動的にチャット画面が表示されます
+1. ログイン後、自動的にチャット画面が表示されます
 2. 下部の入力欄に日本語または英語でメッセージを入力
 3. Enterキーを押すか送信ボタン（➤）をクリック
-4. AIが自動的に言語を判定して返答します
+4. AIキャラクター「Rin（りん）」が自動的に言語を判定して返答します
 
 ### 2. 音声入力
 1. 入力欄左側のマイクボタン（🎤）をクリック
@@ -179,6 +200,14 @@ npm run dev
 2. 複数のYouTube URLを改行で区切って入力
 3. 「処理開始」をクリック
 4. 進行状況がリアルタイムで表示されます
+
+### 6. 設定（新機能）
+1. 右上のユーザーメニューから「⚙️ 設定」をクリック
+2. 以下の項目をカスタマイズできます：
+   - **表示言語**: アプリの言語（日本語/英語）
+   - **AI応答言語**: AIの返答言語の優先設定
+   - **エクスポート形式**: 語彙データの出力形式
+3. 変更は自動的に保存されます
 
 ---
 
@@ -231,7 +260,7 @@ npm run dev
 ### Q3: OBS配信で使うには？
 **A**: 
 1. OBSでブラウザソースを追加
-2. URLに `http://localhost:3002/obs?mode=subtitle` を入力
+2. URLに `http://localhost:3003/obs?mode=subtitle` を入力
 3. 幅1920、高さ1080に設定
 
 ### Q4: データはどこに保存されますか？

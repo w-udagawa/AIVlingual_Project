@@ -1,9 +1,6 @@
-# CLAUDE.md
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+# CLAUDE.md - AIVlingual Development Guide
 
 ## Project Overview
-
 AIVlingual is a revolutionary YouTube channel system that transforms ephemeral Vtuber content into permanent educational resources. The core innovation is converting "flow content" (Vtuber clips) into "stock content" (searchable language learning database).
 
 ### Key Achievements

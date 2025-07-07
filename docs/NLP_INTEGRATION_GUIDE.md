@@ -11,15 +11,37 @@ This guide explains how to integrate the new NLP-enhanced vocabulary extraction 
 
 ## 🚀 Quick Start
 
-### 1. Install Dependencies
+### ⚠️ 重要: Windows環境での実行要件
+
+**NLP機能を使用する場合、必ずWindowsコマンドプロンプトでConda環境を使用してください。WSL2では動作しません。**
+
+### 1. 環境セットアップ (Conda推奨)
+
+```bash
+# Windowsコマンドプロンプトで実行
+conda create -n aivlingual_py311 python=3.11
+conda activate aivlingual_py311
+```
+
+### 2. Install Dependencies
 
 ```bash
 cd backend
 pip install -r requirements-nlp.txt
-python -m spacy download en_core_web_lg
+python -m spacy download en_core_web_sm
+python -m spacy download ja_core_news_sm
 ```
 
-### 2. Optional: Setup Redis
+### 3. 正しい起動方法
+
+```cmd
+# Windowsコマンドプロンプトで実行（WSL2ではない）
+cd C:\ClaudeWork\AIVlingual_Project\backend
+conda activate aivlingual_py311
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### 4. Optional: Setup Redis
 
 ```bash
 # Ubuntu/Debian
@@ -35,7 +57,7 @@ sudo apt-get install redis-server
 redis-server
 ```
 
-### 3. Update Environment Variables
+### 5. Update Environment Variables
 
 ```bash
 # backend/.env
@@ -206,14 +228,28 @@ logging.getLogger('app.services.nlp_vocabulary_extractor').setLevel(logging.DEBU
 
 ## 🆘 Troubleshooting
 
+### "Only 3-5 vocabulary items extracted" 
+**最も一般的な問題 - WSL2環境でuvicornを実行している**
+```bash
+# 環境を確認
+http://localhost:8000/api/v1/youtube/debug-env
+
+# 解決方法: Windowsコマンドプロンプトで再起動
+cd C:\ClaudeWork\AIVlingual_Project\backend
+conda activate aivlingual_py311
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
 ### "No module named 'spacy'"
 ```bash
+conda activate aivlingual_py311
 pip install -r requirements-nlp.txt
 ```
 
 ### "No spaCy model found"
 ```bash
-python -m spacy download en_core_web_lg
+python -m spacy download en_core_web_sm
+python -m spacy download ja_core_news_sm
 ```
 
 ### "Redis connection refused"
@@ -227,6 +263,9 @@ redis-cli ping
 - Use smaller spaCy model: `en_core_web_sm`
 - Reduce cache TTL
 - Limit concurrent extractions
+
+### 詳細なトラブルシューティング
+詳しくは `/docs/NLP_TROUBLESHOOTING_GUIDE.md` を参照してください。
 
 ## 🎉 Success Metrics
 

@@ -1,0 +1,68 @@
+word,pos,cefr_level,category,japanese,context
+stream,noun,B1,streaming,配信,live streaming
+chat,noun,A2,communication,チャット,chat interaction
+sub,noun,A2,platform,登録者,subscriber
+clip,noun,B1,content,切り抜き,video clip
+collab,noun,B1,content,コラボ,collaboration
+raid,noun,B1,streaming,レイド,raid another streamer
+mod,noun,B1,platform,モデレーター,moderator
+ban,verb,B1,moderation,BAN,ban a user
+spam,noun,B1,moderation,スパム,spam messages
+donate,verb,B1,monetization,投げ銭,donation
+member,noun,A2,platform,メンバー,channel member
+emote,noun,B1,platform,エモート,custom emoji
+hype,noun,B1,emotion,ハイプ,excitement
+simp,verb,B2,slang,推す,overly supportive
+stan,verb,B2,slang,推し活,be a big fan
+cringe,adjective,B2,reaction,痛い,embarrassing
+based,adjective,B2,slang,いいね,agreeable
+pog,interjection,B2,reaction,すごい,awesome
+poggers,interjection,B2,reaction,最高,amazing
+kek,interjection,B2,reaction,草,lol
+yeet,verb,B2,action,投げる,throw
+salty,adjective,B1,emotion,塩対応,bitter
+toxic,adjective,B1,behavior,有害,harmful behavior
+wholesome,adjective,B1,emotion,ほっこり,heartwarming
+cursed,adjective,B2,reaction,呪われた,disturbing
+blessed,adjective,B2,reaction,祝福された,wonderful
+clutch,noun,B2,gaming,クラッチ,crucial play
+throw,verb,B1,gaming,投げる,lose on purpose
+carry,verb,B1,gaming,キャリー,lead team to victory
+feed,verb,B2,gaming,フィード,help enemy team
+grief,verb,B2,gaming,妨害,sabotage
+meta,noun,B2,gaming,メタ,current strategy
+nerf,verb,B2,gaming,弱体化,make weaker
+buff,verb,B2,gaming,強化,make stronger
+gg,interjection,A2,gaming,お疲れ,good game
+ggwp,interjection,B1,gaming,いい試合,good game well played
+glhf,interjection,B1,gaming,頑張って,good luck have fun
+afk,adjective,B1,gaming,離席,away from keyboard
+fps,noun,B1,gaming,FPS,frames per second
+lag,noun,A2,technical,ラグ,delay
+ping,noun,B1,technical,ピン,network latency
+dc,verb,B1,technical,切断,disconnect
+rng,noun,B2,gaming,運ゲー,random number generator
+op,adjective,B1,gaming,強すぎ,overpowered
+noob,noun,A2,gaming,初心者,newbie
+pro,noun,A2,gaming,プロ,professional
+tryhard,noun,B2,gaming,ガチ勢,serious player
+casual,adjective,B1,gaming,エンジョイ勢,relaxed player
+grind,verb,B1,gaming,周回,repetitive play
+farm,verb,B1,gaming,稼ぐ,gather resources
+gank,verb,B2,gaming,ガンク,surprise attack
+bait,verb,B1,gaming,釣る,lure enemy
+juke,verb,B2,gaming,フェイント,dodge skillfully
+kite,verb,B2,gaming,カイト,attack while retreating
+tank,noun,B1,gaming,タンク,damage absorber
+dps,noun,B1,gaming,火力,damage dealer
+healer,noun,A2,gaming,ヒーラー,support role
+cc,noun,B2,gaming,行動妨害,crowd control
+aoe,noun,B2,gaming,範囲攻撃,area of effect
+cd,noun,B1,gaming,クールダウン,cooldown
+ult,noun,B1,gaming,ウルト,ultimate ability
+int,verb,B2,gaming,トロール,intentionally feed
+smurf,noun,B2,gaming,サブ垢,experienced player on new account
+boost,verb,B1,gaming,ブースト,help rank up
+queue,noun,B1,gaming,マッチング,matchmaking
+elo,noun,B2,gaming,レート,skill rating
+mmr,noun,B2,gaming,内部レート,matchmaking rating

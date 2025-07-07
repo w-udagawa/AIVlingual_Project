@@ -7,9 +7,10 @@ import csv
 import json
 import logging
 from pathlib import Path
-from typing import Dict, Optional, Set
+from typing import Dict, Optional, Set, List
 import hashlib
 from datetime import datetime
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -32,14 +33,40 @@ class CEFRDatasetLoader:
     def _load_datasets(self):
         """Load all CEFR datasets"""
         try:
-            # For now, we'll use hardcoded common words as examples
-            # In production, these would be loaded from CSV/JSON files
-            self._initialize_sample_data()
-            logger.info(f"Loaded {len(self.cefr_j_wordlist)} CEFR-J words")
-            logger.info(f"Loaded {len(self.oxford_3000)} Oxford 3000 words")
-            logger.info(f"Loaded {len(self.oxford_5000)} Oxford 5000 words")
+            # Try to load CSV files first
+            csv_loaded = False
+            
+            # Load CEFR-J data
+            cefr_j_path = self.data_dir / "cefr_j_sample.csv"
+            if cefr_j_path.exists():
+                self._load_cefr_j_csv(cefr_j_path)
+                csv_loaded = True
+                logger.info(f"Loaded {len(self.cefr_j_wordlist)} CEFR-J words from CSV")
+            
+            # Load frequency data
+            freq_path = self.data_dir / "frequency_5000.csv"
+            if freq_path.exists():
+                self._load_frequency_csv(freq_path)
+                csv_loaded = True
+                logger.info(f"Loaded {len(self.word_frequency)} frequency entries from CSV")
+            
+            # Load VTuber/gaming vocabulary
+            vtuber_path = self.data_dir / "vtuber_gaming_vocab.csv"
+            if vtuber_path.exists():
+                self._load_vtuber_csv(vtuber_path)
+                csv_loaded = True
+                logger.info(f"Loaded VTuber/gaming vocabulary from CSV")
+            
+            # Fall back to sample data if no CSV files found
+            if not csv_loaded:
+                logger.warning("No CSV files found, using sample data")
+                self._initialize_sample_data()
+            
+            logger.info(f"Total loaded: {len(self.cefr_j_wordlist)} CEFR-J, {len(self.oxford_3000)} Oxford 3000, {len(self.oxford_5000)} Oxford 5000")
         except Exception as e:
             logger.error(f"Error loading CEFR datasets: {str(e)}")
+            # Fall back to sample data
+            self._initialize_sample_data()
     
     def _initialize_sample_data(self):
         """Initialize with sample data for immediate use"""
@@ -176,9 +203,10 @@ class CEFRDatasetLoader:
                 "pos": pos
             }
         
-        # Default: Unknown word, estimate as B2
+        # Default: Make a better guess based on word characteristics
+        estimated_level = self._guess_cefr_level(word, pos)
         return {
-            "level": "B2",
+            "level": estimated_level,
             "source": "default",
             "confidence": 0.50,
             "pos": pos
@@ -198,6 +226,99 @@ class CEFRDatasetLoader:
             return "C1"
         else:
             return "C2"
+    
+    def _load_cefr_j_csv(self, filepath: Path):
+        """Load CEFR-J wordlist from CSV"""
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    word = row['word'].lower()
+                    self.cefr_j_wordlist[word] = {
+                        "level": row['cefr_level'],
+                        "pos": row['pos'],
+                        "frequency": int(row.get('frequency', 1000)),
+                        "category": row.get('category', 'general'),
+                        "japanese": row.get('japanese', '')
+                    }
+                    # Also update frequency index
+                    self.word_frequency[word] = int(row.get('frequency', 1000))
+        except Exception as e:
+            logger.error(f"Error loading CEFR-J CSV: {str(e)}")
+    
+    def _load_frequency_csv(self, filepath: Path):
+        """Load frequency data from CSV"""
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    word = row['word'].lower()
+                    freq = int(row['frequency'])
+                    
+                    # Update frequency index
+                    self.word_frequency[word] = freq
+                    
+                    # Add to appropriate Oxford list based on rank
+                    if freq >= 500000:  # Top words -> Oxford 3000
+                        self.oxford_3000[word] = {
+                            "cefr": row['estimated_cefr'],
+                            "rank": len(self.oxford_3000) + 1,
+                            "pos": [row['pos']],
+                            "source": row.get('source', 'frequency')
+                        }
+                    elif freq >= 100000:  # Common words -> Oxford 5000
+                        self.oxford_5000[word] = {
+                            "cefr": row['estimated_cefr'],
+                            "rank": len(self.oxford_5000) + 3001,
+                            "pos": [row['pos']],
+                            "source": row.get('source', 'frequency')
+                        }
+        except Exception as e:
+            logger.error(f"Error loading frequency CSV: {str(e)}")
+    
+    def _load_vtuber_csv(self, filepath: Path):
+        """Load VTuber/gaming vocabulary from CSV"""
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    word = row['word'].lower()
+                    # Add to CEFR-J for priority lookup
+                    self.cefr_j_wordlist[word] = {
+                        "level": row['cefr_level'],
+                        "pos": row['pos'],
+                        "frequency": 5000,  # Medium frequency
+                        "category": row['category'],
+                        "japanese": row.get('japanese', ''),
+                        "context": row.get('context', '')
+                    }
+        except Exception as e:
+            logger.error(f"Error loading VTuber CSV: {str(e)}")
+    
+    def _guess_cefr_level(self, word: str, pos: Optional[str] = None) -> str:
+        """Make an educated guess about CEFR level based on word characteristics"""
+        word_lower = word.lower()
+        
+        # Very short common words are usually A1/A2
+        if len(word) <= 3:
+            return "A1"
+        elif len(word) <= 5:
+            return "A2"
+        
+        # Check for common patterns
+        if word_lower.endswith('ing') or word_lower.endswith('ed'):
+            return "A2"
+        elif word_lower.endswith('ly'):
+            return "B1"
+        elif word_lower.endswith('tion') or word_lower.endswith('sion'):
+            return "B1"
+        elif word_lower.endswith('ment') or word_lower.endswith('ness'):
+            return "B1"
+        elif len(word) >= 10:
+            return "B2"
+        
+        # Default to B1 instead of B2
+        return "B1"
     
     def get_words_by_level(self, level: str) -> Set[str]:
         """Get all words for a specific CEFR level"""
